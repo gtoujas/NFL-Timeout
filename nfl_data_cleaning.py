@@ -98,7 +98,7 @@ def add_custom_features(dataframe):
     print "Adding Abs Possession Score Difference"
     dataframe['Abs_Possession_Difference'] = dataframe.apply(lambda row: Abs_Possession_Difference(row), axis=1)
     print "Adding Possession Score Difference"
-    dataframe['Abs_Possession_Difference'] = dataframe.apply(lambda row: Abs_Possession_Difference(row), axis=1)
+    dataframe['Possession_Difference'] = dataframe.apply(lambda row: Abs_Possession_Difference(row), axis=1)
     print "Adding Potential Clock Running Feature"
     dataframe['PotentialClockRunning'] = dataframe.apply(lambda row: PotentialClockRunning(row), axis=1)
 
