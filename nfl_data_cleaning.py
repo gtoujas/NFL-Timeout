@@ -12,7 +12,7 @@ def fill_na_with_previous_value(dataframe):
 
     print "Filling empty values"
 
-    columns_to_fill = ['down','Possession_Difference','defteam_timeouts_pre'
+    columns_to_fill = ['down','Possession_Difference','defteam_timeouts_pre','yrdline100'
                         ]
     for column in columns_to_fill:
         dataframe[str(column)] = dataframe[str(column)].fillna(method='ffill')
@@ -77,7 +77,7 @@ def Possession_Difference(row):
 
 #get def team timeouts left pre
 def defteam_timeouts_pre(row):
-    defteam_timeouts_pre = ""
+    defteam_timeouts_pre = None
     if row['HomeTeam']==row['DefensiveTeam']:
         defteam_timeouts_pre=row['HomeTimeouts_Remaining_Pre']
     if row['AwayTeam']==row['DefensiveTeam']:
