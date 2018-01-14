@@ -11,7 +11,7 @@ import csv
 def add_shifted_columns(dataframe):
 
     print "Adding post-play data to each play"
-    columns_to_be_shifted = ['Timeout_Indicator','Timeout_Team','posteam_timeouts_pre',
+    columns_to_be_shifted = ['Timeout_Indicator','Timeout_Team','posteam_timeouts_pre','defteam_timeouts_pre',
                              'HomeTimeouts_Remaining_Pre','AwayTimeouts_Remaining_Pre',
                              'HomeTimeouts_Remaining_Post','AwayTimeouts_Remaining_Post',
                              'Injury_Timeout',
@@ -64,6 +64,14 @@ def Possession_Difference(row):
     poss_diff = (((abs(score_diff)-1)//8) + 1) * (score_diff/(max(1,abs(score_diff))))
     return poss_diff
 
+#get def team timeouts left pre
+def defteam_timeouts_pre(row):
+    defteam_timeouts_pre = ""
+    if row['HomeTeam']==row['DefensiveTeam']:
+        defteam_timeouts_pre=row['HomeTimeouts_Remaining_Pre']
+    if row['AwayTeam']==row['DefensiveTeam']:
+        defteam_timeouts_pre=row['AwayTimeouts_Remaining_Pre']
+    return defteam_timeouts_pre
 
 #get PotentialClockRunning
 #logic for when the clock is definitely stopped ---- incomplete pass, spike, after scoring play, turnover, kickoff/punt,
@@ -89,6 +97,8 @@ def PotentialClockRunning(row):
 
 def add_custom_features(dataframe):
     print "Adding custom features"
+    print "Adding defensive team timeouts left pre"
+    dataframe['defteam_timeouts_pre'] = dataframe.apply(lambda row: defteam_timeouts_pre(row), axis=1)
     print "Adding Injury Timeout"
     dataframe['Injury_Timeout'] = dataframe.apply(lambda row: InjuryTimeout(row), axis=1)
     print "Adding Home Team Score"
