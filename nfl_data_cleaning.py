@@ -54,10 +54,16 @@ def AwayTeamScore(row):
 
 #get how many possession game - can score max of 8 points per possession
 
+def Abs_Possession_Difference(row):
+    abs_score_diff = row['AbsScoreDiff']
+    abs_poss_diff = ((abs_score_diff-1)//8) + 1
+    return abs_poss_diff
+
 def Possession_Difference(row):
-    score_diff = row['AbsScoreDiff']
-    poss = ((score_diff-1)//8) + 1
-    return poss
+    score_diff = row['ScoreDiff']
+    poss_diff = (((abs(score_diff)-1)//8) + 1) * (score_diff/(max(1,abs(score_diff))))
+    return poss_diff
+
 
 #get PotentialClockRunning
 #logic for when the clock is definitely stopped ---- incomplete pass, spike, after scoring play, turnover, kickoff/punt,
@@ -89,8 +95,10 @@ def add_custom_features(dataframe):
     dataframe['HomeTeamScore'] = dataframe.apply(lambda row: HomeTeamScore(row), axis=1)
     print "Adding Away Team Score"
     dataframe['AwayTeamScore'] = dataframe.apply(lambda row: AwayTeamScore(row), axis=1)
+    print "Adding Abs Possession Score Difference"
+    dataframe['Abs_Possession_Difference'] = dataframe.apply(lambda row: Abs_Possession_Difference(row), axis=1)
     print "Adding Possession Score Difference"
-    dataframe['Possession_Difference'] = dataframe.apply(lambda row: Possession_Difference(row), axis=1)
+    dataframe['Abs_Possession_Difference'] = dataframe.apply(lambda row: Abs_Possession_Difference(row), axis=1)
     print "Adding Potential Clock Running Feature"
     dataframe['PotentialClockRunning'] = dataframe.apply(lambda row: PotentialClockRunning(row), axis=1)
 
