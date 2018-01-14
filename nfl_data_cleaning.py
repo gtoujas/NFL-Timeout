@@ -8,6 +8,17 @@ import csv
 # will denote with a '_s' for shifted up
 # look at negative timeouts and injury and all
 
+def fill_na_with_previous_value(dataframe):
+
+    print "Filling empty values"
+
+    columns_to_fill = ['down','Possession_Difference','defteam_timeouts_pre'
+                        ]
+    for column in columns_to_fill:
+        dataframe[str(column)] = dataframe[str(column)].fillna(method='ffill')
+
+    return dataframe
+
 def add_shifted_columns(dataframe):
 
     print "Adding post-play data to each play"
