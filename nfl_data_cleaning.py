@@ -15,7 +15,8 @@ def add_shifted_columns(dataframe):
                              'HomeTimeouts_Remaining_Pre','AwayTimeouts_Remaining_Pre',
                              'HomeTimeouts_Remaining_Post','AwayTimeouts_Remaining_Post',
                              'Injury_Timeout',
-                             'Challenge.Replay']
+                             'Challenge.Replay',
+                             'down','ydstogo']
 
     for column_string in columns_to_be_shifted:
         dataframe[str(column_string+'_s')] = dataframe[column_string].shift(-1)
@@ -68,6 +69,7 @@ def PotentialClockRunning(row):
     list_truth_conditions = [row['PassOutcome']=='Incomplete Pass',
                              row['PlayType'] in ['Extra Point','Kickoff','Spike','Punt'],
                              row['TwoPointConv'] in ['Success','Failure'],
+                             1 in [row['InterceptionThrown'],row['Fumble']]
                              ]
 
     if any(list_truth_conditions)==True:
@@ -99,7 +101,6 @@ def remove_games_with_negative_timeouts(dataframe):
     print "Removing games with negative timeout values"
     plays_with_negative_timeouts_left = dataframe.query('(HomeTimeouts_Remaining_Post < 0) | (AwayTimeouts_Remaining_Post < 0)')
     games_to_remove = plays_with_negative_timeouts_left.GameID.unique()
-    #dataframe = dataframe.drop(dataframe[dataframe.GameID in games_to_remove].index)
     dataframe = dataframe[~dataframe.GameID.isin(games_to_remove)]
 
     return dataframe
