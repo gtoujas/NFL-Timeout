@@ -127,12 +127,29 @@ def Timeout_Label(row):
 
     return Timeout_Label
 
+#Need two different labels for whether it is an offensive timeout or a defensive timeout
 
-#method that adds the timeout label
+def Pos_Timeout_Label(row):
+    Pos_Timeout_Label = 0
+    if row['Timeout_Label']==1 and row['posteam']==row['Timeout_Team_s']:
+            Pos_Timeout_Label = 1
+
+    return Pos_Timeout_Label
+
+def Def_Timeout_Label(row):
+    Def_Timeout_Label = 0
+    if row['Timeout_Label']==1 and row['DefensiveTeam']==row['Timeout_Team_s']:
+            Def_Timeout_Label = 1
+
+    return Def_Timeout_Label
+
+#method that adds the timeout labels
 
 def add_timeout_label(dataframe):
-    print "Adding timeout label"
+    print "Adding timeout labels"
     dataframe['Timeout_Label'] = dataframe.apply(lambda row: Timeout_Label(row), axis=1)
+    dataframe['Pos_Timeout_Label'] = dataframe.apply(lambda row: Pos_Timeout_Label(row), axis=1)
+    dataframe['Def_Timeout_Label'] = dataframe.apply(lambda row: Def_Timeout_Label(row), axis=1)
 
     return dataframe
 
