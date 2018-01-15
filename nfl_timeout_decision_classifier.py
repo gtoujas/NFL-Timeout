@@ -51,14 +51,41 @@ first_relevant_df = pd.DataFrame(time_shortened_df,columns=relevant_columns)
 
 #start with very simple features to train basic tree and view results before doing some feature selection
 
-Def_X_df = pd.DataFrame(first_relevant_df,columns=['TimeSecs','Possession_Difference','down_s','ydstogo_s','yrdline100','defteam_timeouts_pre_s'])
+Def_df = pd.DataFrame(first_relevant_df,columns=['TimeSecs','Possession_Difference','down_s','ydstogo_s','yrdline100','defteam_timeouts_pre_s','Def_Timeout_Label'])
 
 
-#need to drop rows with missing values
+#need to drop rows with missing values if there are any
 
-nulls_df = Def_X_df[pd.isnull(Def_X_df).any(axis=1)]
+nulls_df = Def_df[pd.isnull(Def_df).any(axis=1)]
 na_rows = nulls_df.__len__()
 print('Rows with null values to be deleted: ' + str(na_rows))
 
-Def_X_df=Def_X_df.dropna(axis=0)
+Def_df=Def_df.dropna(axis=0)
+
+
+#split into X vs y
+
+Def_X_df = Def_df.drop(['Def_Timeout_Label'], axis=1)
+Def_y_df = Def_df['Def_Timeout_Label']
+
+#split into training vs test sets - consider splitting on random games instead of every single play, not sure how to think about this yet
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(Def_X_df,Def_y_df, test_size=0.25,random_state = 15)
+
+#train simple decision treee classifier on training set
+
+from sklearn import tree
+clf = tree.DecisionTreeClassifier(min_samples_split=20)
+clf = clf.fit(X_train,y_train)
+
+# make predictions on test set and compare accuracy to test labels
+pred = clf.predict(X_test)
+
+from sklearn.metrics import accuracy_score
+acc= accuracy_score(y_test,pred)
+
+print "Accuracy is --- " + str(acc)
+
+
 
