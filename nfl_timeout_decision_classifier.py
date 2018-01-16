@@ -24,11 +24,11 @@ cleaned_df = pd.read_csv('clean_nfl_data.csv',sep=',')
 
 
 
-#limit plays to only the second half of both the second quarter and fourth quarter, where teams are most likely to be using timeouts to stop the clock
-#ignore overtime for now
+#limit plays to only the end of the game, where teams are most likely to be using timeouts to stop the clock
+#ignore 1st half and overtime for now
 
 
-time_shortened_df = cleaned_df.query('(450 > TimeSecs > 0) | (2250 > TimeSecs > 1800)')
+time_shortened_df = cleaned_df.query('(450 > TimeSecs > 0)')
 
 
 #keep only the columns we think could possibly be relevant for now
@@ -97,7 +97,7 @@ Use Grid Search to find the best parameters of the decision tree classifier to m
 """
 from sklearn.model_selection import GridSearchCV
 clf_grid = tree.DecisionTreeClassifier()
-parameters = {'min_samples_split':[2,5,10,15,20,50,100,200,500],'min_samples_leaf':[1,2,4,8,16,32,64],'splitter':['best','random']}
+parameters = {'min_samples_split':[2,5,10,15,20,50,100,200,500],'min_samples_leaf':[1,2,4,8,16,32,64]}
 clf_grid = GridSearchCV(clf_grid,parameters,scoring='f1')
 clf_grid.fit(X_train,y_train)
 
@@ -122,6 +122,26 @@ ada_pred = ada_clf.predict(X_test)
 
 print "AdaBoost Classification Report -----"
 print classification_report(y_test,ada_pred,target_names=['No Timeout','Timeout'])
+
+
+"""
+
+Attempt at Random Forest Classifier with grid search
+
+"""
+
+from sklearn.ensemble import RandomForestClassifier
+
+rfc_grid = RandomForestClassifier()
+rfc_param = parameters
+rfc_grid = GridSearchCV(rfc_grid,parameters,scoring='f1')
+rfc_grid.fit(X_train,y_train)
+rfc_grid = rfc_grid.best_estimator_
+
+rfc_pred = rfc_grid.predict(X_test)
+
+print "Random Forest Classification Report -----"
+print classification_report(y_test,rfc_pred,target_names=['No Timeout','Timeout'])
 
 
 
