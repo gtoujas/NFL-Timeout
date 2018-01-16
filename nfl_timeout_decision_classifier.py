@@ -85,19 +85,17 @@ from sklearn import tree
 clf = tree.DecisionTreeClassifier(min_samples_split=100)
 clf = clf.fit(X_train,y_train)
 
-# make predictions on test set and compare accuracy to test labels
+# make predictions on test set and compute f1 accuracy due to imbalanced classes - high percentage of observations will be no timeout
 pred = clf.predict(X_test)
+from sklearn.metrics import f1_score
+f1_acc = f1_score(y_test,pred)
 
-from sklearn.metrics import accuracy_score
-acc= accuracy_score(y_test,pred)
-
-print "Total Accuracy is --- " + str(acc)
+print "F1 Accuracy is --- " + str(f1_acc)
 
 # create better accuracy score that looks at percentage of actual timeouts captured by the model, and percent of accurate timeout predictions
 
+from sklearn.metrics import accuracy_score
 timeout_acc_df = pd.DataFrame(pred,columns=['Def_Timeout_Prediction'])
-
-
 timeout_acc_df['Def_Timeout_Label'] = y_test.values
 timeout_label_acc_df = timeout_acc_df.query('(Def_Timeout_Label == 1)')
 timeout_label_acc = accuracy_score(timeout_label_acc_df['Def_Timeout_Label'],timeout_label_acc_df['Def_Timeout_Prediction'])
@@ -106,6 +104,9 @@ print "Percentage of Labeled Timeouts Accurately Classified is ---- " + str(time
 
 timeout_pred_acc_df = timeout_acc_df.query('(Def_Timeout_Prediction) == 1')
 timeout_pred_acc = accuracy_score(timeout_pred_acc_df['Def_Timeout_Label'],timeout_pred_acc_df['Def_Timeout_Prediction'])
+
+
+
 print "Percentage of Predicted Timeouts that were Labeled Timeouts is ---- " + str(timeout_pred_acc)
 
 
