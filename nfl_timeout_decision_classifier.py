@@ -92,22 +92,38 @@ f1_acc = f1_score(y_test,pred)
 
 print "F1 Accuracy is --- " + str(f1_acc)
 
-# create better accuracy score that looks at percentage of actual timeouts captured by the model, and percent of accurate timeout predictions
+"""
+Use Grid Search to find the best parameters of the decision tree classifier to maximize the f1_score
+"""
+from sklearn.model_selection import GridSearchCV
+clf_grid = tree.DecisionTreeClassifier()
+parameters = {'min_samples_split':[2,5,10,15,20,50,100,200,500],'min_samples_leaf':[1,2,4,8,16,32,64],'splitter':['best','random']}
+clf_grid = GridSearchCV(clf_grid,parameters,scoring='f1')
+clf_grid.fit(X_train,y_train)
 
-from sklearn.metrics import accuracy_score
-timeout_acc_df = pd.DataFrame(pred,columns=['Def_Timeout_Prediction'])
-timeout_acc_df['Def_Timeout_Label'] = y_test.values
-timeout_label_acc_df = timeout_acc_df.query('(Def_Timeout_Label == 1)')
-timeout_label_acc = accuracy_score(timeout_label_acc_df['Def_Timeout_Label'],timeout_label_acc_df['Def_Timeout_Prediction'])
+clf_grid = clf_grid.best_estimator_
 
-print "Percentage of Labeled Timeouts Accurately Classified is ---- " + str(timeout_label_acc)
-
-timeout_pred_acc_df = timeout_acc_df.query('(Def_Timeout_Prediction) == 1')
-timeout_pred_acc = accuracy_score(timeout_pred_acc_df['Def_Timeout_Label'],timeout_pred_acc_df['Def_Timeout_Prediction'])
+from sklearn.metrics import classification_report
+grid_pred = clf_grid.predict(X_test)
+print classification_report(y_test,grid_pred,target_names=['No Timeout','Timeout'])
 
 
+"""
 
-print "Percentage of Predicted Timeouts that were Labeled Timeouts is ---- " + str(timeout_pred_acc)
+Use AdaBoost to boost the best estimator found in the grid search
+
+"""
+
+from sklearn.ensemble import AdaBoostClassifier
+
+ada_clf = AdaBoostClassifier(clf_grid)
+ada_clf.fit(X_train,y_train)
+ada_pred = ada_clf.predict(X_test)
+
+print "AdaBoost Classification Report -----"
+print classification_report(y_test,ada_pred,target_names=['No Timeout','Timeout'])
+
+
 
 
 #export tree to graphical format so that we can visualize it
