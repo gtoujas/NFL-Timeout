@@ -36,7 +36,7 @@ time_shortened_df = cleaned_df.query('(450 > TimeSecs > 0) | (2250 > TimeSecs > 
 relevant_columns = ['Date','GameID','HomeTeam','AwayTeam','posteam','DefensiveTeam',
                     'PosTeamScore','DefTeamScore','ScoreDiff','AbsScoreDiff','Possession_Difference',
                     'qtr','time','TimeSecs','PlayTimeDiff','down','ydstogo','yrdline100',
-                    'down_s','ydstogo_s',
+                    'down_s','ydstogo_s','yrdline100_s',
                     'desc','PlayType','PassOutcome','RushAttempt',
                     'Accepted.Penalty','PenalizedTeam',
                     'Timeout_Label','Pos_Timeout_Label','Def_Timeout_Label',
@@ -49,9 +49,15 @@ first_relevant_df = pd.DataFrame(time_shortened_df,columns=relevant_columns)
 #potentially think about splitting first and second half?
 #have to split offensive and defensive timeouts, both are very different
 
+"""
+
+#------ Defensive Timeout Model First ------
+
+
+"""
 #start with very simple features to train basic tree and view results before doing some feature selection
 
-Def_df = pd.DataFrame(first_relevant_df,columns=['TimeSecs','Possession_Difference','down_s','ydstogo_s','yrdline100','defteam_timeouts_pre_s','Def_Timeout_Label'])
+Def_df = pd.DataFrame(first_relevant_df,columns=['TimeSecs','Possession_Difference','down_s','ydstogo_s','yrdline100_s','defteam_timeouts_pre_s','Def_Timeout_Label'])
 
 
 #need to drop rows with missing values if there are any
@@ -76,7 +82,7 @@ X_train, X_test, y_train, y_test = train_test_split(Def_X_df,Def_y_df, test_size
 #train simple decision treee classifier on training set
 
 from sklearn import tree
-clf = tree.DecisionTreeClassifier(min_samples_split=20)
+clf = tree.DecisionTreeClassifier(min_samples_split=100)
 clf = clf.fit(X_train,y_train)
 
 # make predictions on test set and compare accuracy to test labels
@@ -85,7 +91,25 @@ pred = clf.predict(X_test)
 from sklearn.metrics import accuracy_score
 acc= accuracy_score(y_test,pred)
 
-print "Accuracy is --- " + str(acc)
+print "Total Accuracy is --- " + str(acc)
+
+# create better accuracy score that looks at percentage of actual timeouts captured by the model, and percent of accurate timeout predictions
+
+timeout_acc_df = pd.DataFrame(pred,columns=['Def_Timeout_Prediction'])
 
 
+timeout_acc_df['Def_Timeout_Label'] = y_test.values
+timeout_label_acc_df = timeout_acc_df.query('(Def_Timeout_Label == 1)')
+timeout_label_acc = accuracy_score(timeout_label_acc_df['Def_Timeout_Label'],timeout_label_acc_df['Def_Timeout_Prediction'])
 
+print "Percentage of Labeled Timeouts Accurately Classified is ---- " + str(timeout_label_acc)
+
+timeout_pred_acc_df = timeout_acc_df.query('(Def_Timeout_Prediction) == 1')
+timeout_pred_acc = accuracy_score(timeout_pred_acc_df['Def_Timeout_Label'],timeout_pred_acc_df['Def_Timeout_Prediction'])
+print "Percentage of Predicted Timeouts that were Labeled Timeouts is ---- " + str(timeout_pred_acc)
+
+
+#export tree to graphical format so that we can visualize it
+
+with open("clf_graphviz.txt", "w") as f:
+    f = tree.export_graphviz(clf, out_file=f)

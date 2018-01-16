@@ -27,7 +27,7 @@ def add_shifted_columns(dataframe):
                              'HomeTimeouts_Remaining_Post','AwayTimeouts_Remaining_Post',
                              'Injury_Timeout',
                              'Challenge.Replay',
-                             'down','ydstogo']
+                             'down','ydstogo','yrdline100']
 
     for column_string in columns_to_be_shifted:
         dataframe[str(column_string+'_s')] = dataframe[column_string].shift(-1)
