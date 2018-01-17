@@ -41,7 +41,8 @@ relevant_columns = ['Date','GameID','HomeTeam','AwayTeam','posteam','DefensiveTe
                     'Accepted.Penalty','PenalizedTeam',
                     'Timeout_Label','Pos_Timeout_Label','Def_Timeout_Label',
                     'Timeout_Indicator_s','Timeout_Team_s','posteam_timeouts_pre_s','defteam_timeouts_pre_s',
-                    'HomeTimeouts_Remaining_Pre_s','AwayTimeouts_Remaining_Pre_s','HomeTimeouts_Remaining_Post_s','AwayTimeouts_Remaining_Post_s'
+                    'HomeTimeouts_Remaining_Pre_s','AwayTimeouts_Remaining_Pre_s','HomeTimeouts_Remaining_Post_s','AwayTimeouts_Remaining_Post_s',
+                    'PotentialClockRunning'
                     ]
 
 first_relevant_df = pd.DataFrame(time_shortened_df,columns=relevant_columns)
@@ -55,9 +56,13 @@ first_relevant_df = pd.DataFrame(time_shortened_df,columns=relevant_columns)
 
 
 """
-#start with very simple features to train basic tree and view results before doing some feature selection
+#filter some of the rows based on columns to help narrow the dataset to only situations where it would make sense to call timeout if we can
 
-Def_df = pd.DataFrame(first_relevant_df,columns=['TimeSecs','Possession_Difference','down_s','ydstogo_s','yrdline100_s','defteam_timeouts_pre_s','Def_Timeout_Label'])
+filtered_df = first_relevant_df.query('PotentialClockRunning==1')
+
+
+#start with very simple features to train basic tree and view results before doing some feature selection
+Def_df = pd.DataFrame(filtered_df,columns=['TimeSecs','Possession_Difference','down_s','ydstogo_s','yrdline100_s','defteam_timeouts_pre_s','Def_Timeout_Label'])
 
 
 #need to drop rows with missing values if there are any
