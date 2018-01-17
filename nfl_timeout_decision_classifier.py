@@ -29,7 +29,7 @@ cleaned_df = pd.read_csv('clean_nfl_data.csv',sep=',')
 #ignore 1st half and overtime for now
 
 
-time_shortened_df = cleaned_df.query('(360 > TimeSecs > 0)')
+time_shortened_df = cleaned_df.query('(300 > TimeSecs > 0)')
 
 
 #keep only the columns we think could possibly be relevant for now
@@ -66,8 +66,12 @@ filtered_df.to_csv('filtered_def.csv',sep=',',index=False)
 
 #start with very simple features to train basic tree and view results before doing some feature selection
 
+"""
+NEED TO FIX ydstogo_s, then put it back in the model, issue is that all timeouts occur when ydstogo_s is 0 due to how data is set up, remove ydstogo_s from shifted columns and from learning model
+"""
 
-Def_df = pd.DataFrame(filtered_df,columns=['TimeSecs','Possession_Difference','down_s','ydstogo_s','yrdline100_s','defteam_timeouts_pre_s','Def_Timeout_Label'])
+
+Def_df = pd.DataFrame(filtered_df,columns=['TimeSecs','Possession_Difference','ScoreDiff','down_s','yrdline100_s','defteam_timeouts_pre_s','Def_Timeout_Label'])
 
 
 #need to drop rows with missing values if there are any
@@ -158,5 +162,5 @@ print classification_report(y_test,rfc_pred,target_names=['No Timeout','Timeout'
 
 #export tree to graphical format so that we can visualize it
 
-with open("clf_graphviz.txt", "w") as f:
-    f = tree.export_graphviz(clf, out_file=f)
+
+outfile = tree.export_graphviz(clf,out_file = 'clf_graphviz.txt', feature_names=list(Def_X_df))
