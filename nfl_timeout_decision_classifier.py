@@ -59,9 +59,12 @@ first_relevant_df = pd.DataFrame(time_shortened_df,columns=relevant_columns)
 #filter some of the rows based on columns to help narrow the dataset to only situations where it would make sense to call timeout if we can
 
 filtered_df = first_relevant_df.query('PotentialClockRunning==1')
-
+filtered_df = filtered_df[filtered_df['PenalizedTeam'].isnull()]
+filtered_df = filtered_df.query('(-9<ScoreDiff<17)')
 
 #start with very simple features to train basic tree and view results before doing some feature selection
+
+
 Def_df = pd.DataFrame(filtered_df,columns=['TimeSecs','Possession_Difference','down_s','ydstogo_s','yrdline100_s','defteam_timeouts_pre_s','Def_Timeout_Label'])
 
 
