@@ -94,7 +94,8 @@ def PotentialClockRunning(row):
     list_truth_conditions = [row['PassOutcome']=='Incomplete Pass',
                              row['PlayType'] in ['Extra Point','Kickoff','Spike','Punt'],
                              row['TwoPointConv'] in ['Success','Failure'],
-                             1 in [row['InterceptionThrown'],row['Fumble']]
+                             1 in [row['InterceptionThrown'],row['Fumble']],
+                             row['sp']==1
                              ]
 
     if any(list_truth_conditions)==True:

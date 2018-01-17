@@ -18,6 +18,7 @@ def cleandata(dataframe):
 
     return cleaned_df
 
+#comment out the next line if you already have a 'clean_nfl_data.csv' file
 #cleaned_df = cleandata(initial_df)
 
 cleaned_df = pd.read_csv('clean_nfl_data.csv',sep=',')
@@ -28,7 +29,7 @@ cleaned_df = pd.read_csv('clean_nfl_data.csv',sep=',')
 #ignore 1st half and overtime for now
 
 
-time_shortened_df = cleaned_df.query('(450 > TimeSecs > 0)')
+time_shortened_df = cleaned_df.query('(360 > TimeSecs > 0)')
 
 
 #keep only the columns we think could possibly be relevant for now
@@ -61,6 +62,7 @@ first_relevant_df = pd.DataFrame(time_shortened_df,columns=relevant_columns)
 filtered_df = first_relevant_df.query('PotentialClockRunning==1')
 filtered_df = filtered_df[filtered_df['PenalizedTeam'].isnull()]
 filtered_df = filtered_df.query('(-9<ScoreDiff<17)')
+filtered_df.to_csv('filtered_def.csv',sep=',',index=False)
 
 #start with very simple features to train basic tree and view results before doing some feature selection
 
