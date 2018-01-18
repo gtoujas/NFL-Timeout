@@ -19,7 +19,7 @@ def cleandata(dataframe):
     return cleaned_df
 
 #comment out the next line if you already have a 'clean_nfl_data.csv' file
-#cleaned_df = cleandata(initial_df)
+cleaned_df = cleandata(initial_df)
 
 cleaned_df = pd.read_csv('clean_nfl_data.csv',sep=',')
 
@@ -37,7 +37,7 @@ time_shortened_df = cleaned_df.query('(300 > TimeSecs > 0)')
 relevant_columns = ['Date','GameID','HomeTeam','AwayTeam','posteam','DefensiveTeam',
                     'PosTeamScore','DefTeamScore','ScoreDiff','AbsScoreDiff','Possession_Difference',
                     'qtr','time','TimeSecs','PlayTimeDiff','down','ydstogo','yrdline100',
-                    'down_s','ydstogo_s','yrdline100_s',
+                    'down_s','ydstogo_s','yrdline100_post',
                     'desc','PlayType','PassOutcome','RushAttempt',
                     'Accepted.Penalty','PenalizedTeam',
                     'Timeout_Label','Pos_Timeout_Label','Def_Timeout_Label',
@@ -71,7 +71,7 @@ NEED TO FIX ydstogo_s, then put it back in the model, issue is that all timeouts
 """
 
 
-Def_df = pd.DataFrame(filtered_df,columns=['TimeSecs','Possession_Difference','ScoreDiff','down_s','yrdline100_s','defteam_timeouts_pre_s','Def_Timeout_Label'])
+Def_df = pd.DataFrame(filtered_df,columns=['TimeSecs','Possession_Difference','ScoreDiff','down_s','yrdline100_post','defteam_timeouts_pre_s','Def_Timeout_Label'])
 
 
 #need to drop rows with missing values if there are any
@@ -163,4 +163,10 @@ print classification_report(y_test,rfc_pred,target_names=['No Timeout','Timeout'
 #export tree to graphical format so that we can visualize it
 
 
-outfile = tree.export_graphviz(clf,out_file = 'clf_graphviz.txt', feature_names=list(Def_X_df))
+import graphviz
+
+graph_dot = tree.export_graphviz(clf_grid,out_file = "graph.txt", feature_names=list(Def_X_df))
+graph = graphviz.Source(graph_dot)
+
+#graph.render("graph")
+

@@ -27,7 +27,7 @@ def add_shifted_columns(dataframe):
                              'HomeTimeouts_Remaining_Post','AwayTimeouts_Remaining_Post',
                              'Injury_Timeout',
                              'Challenge.Replay',
-                             'down','ydstogo','yrdline100']
+                             'down','ydstogo']
 
     for column_string in columns_to_be_shifted:
         dataframe[str(column_string+'_s')] = dataframe[column_string].shift(-1)
@@ -84,6 +84,13 @@ def defteam_timeouts_pre(row):
         defteam_timeouts_pre=row['AwayTimeouts_Remaining_Pre']
     return defteam_timeouts_pre
 
+#get actual ydline100_s, shifting it doesnt work because on plays with timeouts the data is whacky and gives you only the <50 yardline
+
+def yrdline100_post(row):
+
+    yrdline100_post = row['yrdline100'] - row['Yards.Gained']
+    return yrdline100_post
+
 #get PotentialClockRunning
 #logic for when the clock is definitely stopped ---- incomplete pass, spike, after scoring play, turnover, kickoff/punt,
 #                                                    some accepted penalties,- look up rules on this (will add in future version),
@@ -92,7 +99,7 @@ def defteam_timeouts_pre(row):
 
 def PotentialClockRunning(row):
     list_truth_conditions = [row['PassOutcome']=='Incomplete Pass',
-                             row['PlayType'] in ['Extra Point','Kickoff','Spike','Punt'],
+                             row['PlayType'] in ['Extra Point','Kickoff','Spike','Punt','No Play'],
                              row['TwoPointConv'] in ['Success','Failure'],
                              1 in [row['InterceptionThrown'],row['Fumble']],
                              row['sp']==1
@@ -121,6 +128,8 @@ def add_custom_features(dataframe):
     dataframe['Abs_Possession_Difference'] = dataframe.apply(lambda row: Abs_Possession_Difference(row), axis=1)
     print "Adding Possession Score Difference"
     dataframe['Possession_Difference'] = dataframe.apply(lambda row: Abs_Possession_Difference(row), axis=1)
+    print "Adding post play yrdline100"
+    dataframe['yrdline100_post'] = dataframe.apply(lambda row: yrdline100_post(row), axis=1)
     print "Adding Potential Clock Running Feature"
     dataframe['PotentialClockRunning'] = dataframe.apply(lambda row: PotentialClockRunning(row), axis=1)
 
