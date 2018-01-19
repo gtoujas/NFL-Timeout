@@ -91,6 +91,62 @@ def yrdline100_post(row):
     yrdline100_post = row['yrdline100'] - row['Yards.Gained']
     return yrdline100_post
 
+#make simple time feature that determines whether it is before or after 2 minute warning, might help prevent overfitting to time?
+
+def after_two_minute_warning(row):
+
+    if row['TimeSecs'] < 121:
+        after_two_minute_warning = 1
+    else:
+        after_two_minute_warning = 0
+
+    return after_two_minute_warning
+
+
+def first_down_post(row):
+
+    first_down_conditions = [row['Yards.Gained'] > row['ydstogo'],
+                             row['ydstogo'] > 0,
+                             row['Accepted.Penalty'] == 0,
+                             row['sp'] == 0,
+                             row['Challenge.Replay'] == 0,
+                             row['PlayType'] != "No Play"
+                             ]
+
+    if row['FirstDown'] == 1:
+        first_down_post = 1
+    elif all(first_down_conditions) == True:
+        first_down_post = 1
+    else:
+        first_down_post = 0
+
+    return first_down_post
+
+#figure out a better way to determine the down of the following play, using down_s has major issues and need to figure out how to clean some of the problems with the data
+
+def down_post_play(row):
+
+    consecutive_fourth_down_conditions = [row['down'] == 4,
+                                          row['down_s'] == 4,
+                                          str(row['desc']).__contains__('enalty')]
+
+    if first_down_post == 1:
+        down_post_play = 1
+
+    elif all(consecutive_fourth_down_conditions) == True:
+        down_post_play = 4
+
+    elif row['down'] == 4:
+        down_post_play = 1
+
+    elif pd.isnull(row['down']):
+        down_post_play = ""
+
+    else:
+        down_post_play = int(row['down']) + 1
+
+    return down_post_play
+
 #get PotentialClockRunning
 #logic for when the clock is definitely stopped ---- incomplete pass, spike, after scoring play, turnover, kickoff/punt,
 #                                                    some accepted penalties,- look up rules on this (will add in future version),
@@ -99,7 +155,7 @@ def yrdline100_post(row):
 
 def PotentialClockRunning(row):
     list_truth_conditions = [row['PassOutcome']=='Incomplete Pass',
-                             row['PlayType'] in ['Extra Point','Kickoff','Spike','Punt','No Play'],
+                             row['PlayType'] in ['Extra Point','Kickoff','Spike','Punt','No Play','End of Game','Quarter End','Two Minute Warning'],
                              row['TwoPointConv'] in ['Success','Failure'],
                              1 in [row['InterceptionThrown'],row['Fumble']],
                              row['sp']==1
@@ -110,6 +166,7 @@ def PotentialClockRunning(row):
     else:
         PotentialClockRunning = 1
     return PotentialClockRunning
+
 
 
 #apply the functions to add custom features
@@ -130,8 +187,18 @@ def add_custom_features(dataframe):
     dataframe['Possession_Difference'] = dataframe.apply(lambda row: Abs_Possession_Difference(row), axis=1)
     print "Adding post play yrdline100"
     dataframe['yrdline100_post'] = dataframe.apply(lambda row: yrdline100_post(row), axis=1)
+    print "Adding post 2 Minute Warning Feature"
+    dataframe['after_two_minute_warning'] = dataframe.apply(lambda row: after_two_minute_warning(row), axis=1)
     print "Adding Potential Clock Running Feature"
     dataframe['PotentialClockRunning'] = dataframe.apply(lambda row: PotentialClockRunning(row), axis=1)
+
+    return dataframe
+
+#adding resulting down of play sepereeately since it requires using down_s
+
+def add_resulting_down(dataframe):
+    print "Adding Down Post Play"
+    dataframe['down_post_play'] = dataframe.apply(lambda row: down_post_play(row), axis=1)
 
     return dataframe
 

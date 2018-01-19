@@ -12,6 +12,7 @@ def cleandata(dataframe):
     cleaned_df = add_custom_features(dataframe)
     cleaned_df = fill_na_with_previous_value(cleaned_df)
     cleaned_df = add_shifted_columns(cleaned_df)
+    cleaned_df = add_resulting_down(cleaned_df)
     cleaned_df = add_timeout_label(cleaned_df)
     cleaned_df = remove_games_with_negative_timeouts(cleaned_df)
     cleaned_df.to_csv('clean_nfl_data.csv',sep=',',index=False)
@@ -36,8 +37,8 @@ time_shortened_df = cleaned_df.query('(300 > TimeSecs > 0)')
 
 relevant_columns = ['Date','GameID','HomeTeam','AwayTeam','posteam','DefensiveTeam',
                     'PosTeamScore','DefTeamScore','ScoreDiff','AbsScoreDiff','Possession_Difference',
-                    'qtr','time','TimeSecs','PlayTimeDiff','down','ydstogo','yrdline100',
-                    'down_s','ydstogo_s','yrdline100_post',
+                    'qtr','time','TimeSecs','after_two_minute_warning','PlayTimeDiff','down','ydstogo','yrdline100',
+                    'down_s','down_post_play','ydstogo_s','yrdline100_post',
                     'desc','PlayType','PassOutcome','RushAttempt',
                     'Accepted.Penalty','PenalizedTeam',
                     'Timeout_Label','Pos_Timeout_Label','Def_Timeout_Label',
@@ -71,7 +72,7 @@ NEED TO FIX ydstogo_s, then put it back in the model, issue is that all timeouts
 """
 
 
-Def_df = pd.DataFrame(filtered_df,columns=['TimeSecs','Possession_Difference','ScoreDiff','down_s','yrdline100_post','defteam_timeouts_pre_s','Def_Timeout_Label'])
+Def_df = pd.DataFrame(filtered_df,columns=['TimeSecs','after_two_minute_warning','Possession_Difference','ScoreDiff','down_post_play','yrdline100_post','defteam_timeouts_pre_s','Def_Timeout_Label'])
 
 
 #need to drop rows with missing values if there are any
@@ -91,12 +92,31 @@ Def_y_df = Def_df['Def_Timeout_Label']
 #split into training vs test sets - consider splitting on random games instead of every single play, not sure how to think about this yet
 
 from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(Def_X_df,Def_y_df, test_size=0.25,random_state = 15)
+X_train, X_test, y_train, y_test = train_test_split(Def_X_df,Def_y_df, test_size=0.25,random_state = 1)
 
 #train simple decision treee classifier on training set
 
+"""
+
+Notes for Decision Tree Classifier
+
+max_depth set low to better visualize whats going
+min_sample_leaf set at 5 per sklearn
+sample_weight is set to 1:1, may want to try to vary this, read more about sample weights
+seems like AdaBoost works on normalizing sample weights?
+
+adding class_weight makes the tree make a lot more sense now, more accurate as well
+
+try min_impurity_decrease with a deep tree?
+
+its possible that timesecs is causing some overfitting, look into having a very simple before and after two minute warning? or something more along the lines of time buckets?
+"""
+
 from sklearn import tree
-clf = tree.DecisionTreeClassifier(min_samples_split=100)
+clf = tree.DecisionTreeClassifier(max_depth = 8,
+                                  min_samples_leaf=5,
+                                  class_weight = 'balanced',
+                                  min_impurity_split = .1)
 clf = clf.fit(X_train,y_train)
 
 # make predictions on test set and compute f1 accuracy due to imbalanced classes - high percentage of observations will be no timeout
@@ -165,7 +185,15 @@ print classification_report(y_test,rfc_pred,target_names=['No Timeout','Timeout'
 
 import graphviz
 
-graph_dot = tree.export_graphviz(clf_grid,out_file = "graph.txt", feature_names=list(Def_X_df))
+
+
+
+graph_dot = tree.export_graphviz(clf,
+                                 out_file = "graph.txt",
+                                 feature_names=list(Def_X_df),
+                                 class_names=['No Timeout','Timeout'],
+                                 filled=True,
+                                 rounded = True)
 graph = graphviz.Source(graph_dot)
 
 #graph.render("graph")
