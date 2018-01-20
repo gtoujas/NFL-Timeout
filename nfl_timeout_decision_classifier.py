@@ -2,12 +2,30 @@ from nfl_data_cleaning import *
 import pandas as pd
 
 
-#import raw kaggle data into dataframe
+"""
+
+This file first uses the methods defined in nfl_data_cleaning.py to clean the raw Kaggle data, and then trains certain
+Decision Tree Classifiers in an attempt to replicate the decision making process that an NFL coach undergoes when
+determining how best to use timeouts to stop the clock.
+
+"""
+
+
+
+
+"""
+Import raw Kaggle data into dataframe
+"""
+
 initial_df = pd.read_csv('NFL Play by Play 2009-2016 (v3).csv')
 
-#use functions in cleaning file to clean the raw data from kaggle
+
 
 def cleandata(dataframe):
+
+    """
+    Function that combines all cleaning functions imported from nfl_data_cleaning.py to clean the data in one step
+    """
 
     cleaned_df = add_custom_features(dataframe)
     cleaned_df = fill_na_with_previous_value(cleaned_df)
@@ -19,21 +37,30 @@ def cleandata(dataframe):
 
     return cleaned_df
 
-#comment out the next line if you already have a 'clean_nfl_data.csv' file
+"""
+Comment out the next line if you already have a 'clean_nfl_data.csv' file
+"""
 cleaned_df = cleandata(initial_df)
 
+
+"""
+Save clean data file to avoid cleaning every time you make changes to the classifiers
+"""
 cleaned_df = pd.read_csv('clean_nfl_data.csv',sep=',')
 
 
 
-#limit plays to only the end of the game, where teams are most likely to be using timeouts to stop the clock
-#ignore 1st half and overtime for now
-
+"""
+Limit plays to only the end of the game, where teams are most likely to be using timeouts to stop the clock
+Ignore 1st half and overtime for now
+"""
 
 time_shortened_df = cleaned_df.query('(300 > TimeSecs > 0)')
 
 
-#keep only the columns we think could possibly be relevant for now
+"""
+Narrow down the dataframe to only the columns that could even potentially be relevant for timeout decision making
+"""
 
 relevant_columns = ['Date','GameID','HomeTeam','AwayTeam','posteam','DefensiveTeam',
                     'PosTeamScore','DefTeamScore','ScoreDiff','AbsScoreDiff','Possession_Difference',
@@ -49,23 +76,24 @@ relevant_columns = ['Date','GameID','HomeTeam','AwayTeam','posteam','DefensiveTe
 
 first_relevant_df = pd.DataFrame(time_shortened_df,columns=relevant_columns)
 
-#potentially think about splitting first and second half?
-#have to split offensive and defensive timeouts, both are very different
-
 """
 
-#------ Defensive Timeout Model First ------
+------ Defensive Timeout Model First ------
+
+Since the strategy for calling offensive and defensice timeouts is very different, we will need to train different
+classifiers for offensive and defensive timeouts. As of now, this model only predicts defensive timeouts
 
 
+The following lines filter rows based on subjective situations where we would most likely not want to predict a defensive timeout
 """
-#filter some of the rows based on columns to help narrow the dataset to only situations where it would make sense to call timeout if we can
+
 
 filtered_df = first_relevant_df.query('PotentialClockRunning==1')
 filtered_df = filtered_df[filtered_df['PenalizedTeam'].isnull()]
 filtered_df = filtered_df.query('(-9<ScoreDiff<17)')
 filtered_df.to_csv('filtered_def.csv',sep=',',index=False)
 
-#start with very simple features to train basic tree and view results before doing some feature selection
+
 
 """
 NEED TO FIX ydstogo_s, then put it back in the model, issue is that all timeouts occur when ydstogo_s is 0 due to how data is set up, remove ydstogo_s from shifted columns and from learning model
