@@ -40,7 +40,7 @@ def cleandata(dataframe):
 """
 Comment out the next line if you already have a 'clean_nfl_data.csv' file
 """
-cleaned_df = cleandata(initial_df)
+#cleaned_df = cleandata(initial_df)
 
 
 """
@@ -70,7 +70,8 @@ relevant_columns = ['Date','GameID','HomeTeam','AwayTeam','posteam','DefensiveTe
                     'Accepted.Penalty','PenalizedTeam',
                     'Timeout_Label','Pos_Timeout_Label','Def_Timeout_Label',
                     'Timeout_Indicator_s','Timeout_Team_s','posteam_timeouts_pre_s','defteam_timeouts_pre_s',
-                    'HomeTimeouts_Remaining_Pre_s','AwayTimeouts_Remaining_Pre_s','HomeTimeouts_Remaining_Post_s','AwayTimeouts_Remaining_Post_s',
+                    'HomeTimeouts_Remaining_Pre_s','AwayTimeouts_Remaining_Pre_s',
+                    'HomeTimeouts_Remaining_Post_s','AwayTimeouts_Remaining_Post_s',
                     'PotentialClockRunning'
                     ]
 
@@ -80,11 +81,12 @@ first_relevant_df = pd.DataFrame(time_shortened_df,columns=relevant_columns)
 
 ------ Defensive Timeout Model First ------
 
-Since the strategy for calling offensive and defensice timeouts is very different, we will need to train different
+Since the strategy for calling offensive and defensive timeouts is very different, we will need to train different
 classifiers for offensive and defensive timeouts. As of now, this model only predicts defensive timeouts
 
 
-The following lines filter rows based on subjective situations where we would most likely not want to predict a defensive timeout
+The following lines filter rows based on subjective situations where we would most likely not want to predict a
+defensive timeout
 """
 
 
@@ -96,14 +98,24 @@ filtered_df.to_csv('filtered_def.csv',sep=',',index=False)
 
 
 """
-NEED TO FIX ydstogo_s, then put it back in the model, issue is that all timeouts occur when ydstogo_s is 0 due to how data is set up, remove ydstogo_s from shifted columns and from learning model
+Select features and label for classifier training, starting with less features and seeing the impact of adding
+other features
 """
 
 
-Def_df = pd.DataFrame(filtered_df,columns=['TimeSecs','after_two_minute_warning','Possession_Difference','ScoreDiff','down_post_play','yrdline100_post','defteam_timeouts_pre_s','Def_Timeout_Label'])
+Def_df = pd.DataFrame(filtered_df,columns=['TimeSecs',
+                                           'after_two_minute_warning',
+                                           'Possession_Difference',
+                                           'ScoreDiff',
+                                           'down_post_play',
+                                           'yrdline100_post',
+                                           'defteam_timeouts_pre_s',
+                                           'Def_Timeout_Label'])
 
 
-#need to drop rows with missing values if there are any
+"""
+Identify how many rows with NaN's there are and drop them from the dataframe
+"""
 
 nulls_df = Def_df[pd.isnull(Def_df).any(axis=1)]
 na_rows = nulls_df.__len__()
@@ -111,18 +123,20 @@ print('Rows with null values to be deleted: ' + str(na_rows))
 
 Def_df=Def_df.dropna(axis=0)
 
+"""
+Split dataframe into X and y, and apply train_test_split to split out the testing set
+"""
 
-#split into X vs y
 
 Def_X_df = Def_df.drop(['Def_Timeout_Label'], axis=1)
 Def_y_df = Def_df['Def_Timeout_Label']
 
-#split into training vs test sets - consider splitting on random games instead of every single play, not sure how to think about this yet
+
 
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(Def_X_df,Def_y_df, test_size=0.25,random_state = 1)
 
-#train simple decision treee classifier on training set
+
 
 """
 
@@ -137,85 +151,73 @@ adding class_weight makes the tree make a lot more sense now, more accurate as w
 
 try min_impurity_decrease with a deep tree?
 
-its possible that timesecs is causing some overfitting, look into having a very simple before and after two minute warning? or something more along the lines of time buckets?
+its possible that timesecs is causing some overfitting, look into having a very simple before and after
+two minute warning? or something more along the lines of time buckets?
+
+bring in more features, but let it split only on the most important x features
+
 """
 
 from sklearn import tree
-clf = tree.DecisionTreeClassifier(max_depth = 8,
-                                  min_samples_leaf=5,
-                                  class_weight = 'balanced',
-                                  min_impurity_split = .1)
+clf = tree.DecisionTreeClassifier(criterion = 'entropy',
+                                  splitter = 'best',
+                                  min_impurity_split = .05,
+                                  min_samples_leaf=8,
+                                  min_samples_split = 5,
+                                  max_features = 7,
+                                  max_depth = 9,
+                                  class_weight = {0:.35,1:.65},
+                                  )
+
 clf = clf.fit(X_train,y_train)
-
-# make predictions on test set and compute f1 accuracy due to imbalanced classes - high percentage of observations will be no timeout
 pred = clf.predict(X_test)
-from sklearn.metrics import f1_score
-f1_acc = f1_score(y_test,pred)
 
-print "F1 Accuracy is --- " + str(f1_acc)
+from sklearn.metrics import roc_auc_score
+print "ROC AUC Score is ---- " + str(roc_auc_score(y_test,pred))
+from sklearn.metrics import classification_report
+print "Classification Report for Decision Tree Classifier ----------------------"
+print classification_report(y_test,pred,target_names=['No Timeout','Timeout'])
+
 
 """
 Use Grid Search to find the best parameters of the decision tree classifier to maximize the f1_score
 """
 from sklearn.model_selection import GridSearchCV
 clf_grid = tree.DecisionTreeClassifier()
-parameters = {'min_samples_split':[2,5,10,15,20,50,100,200,500],'min_samples_leaf':[1,2,4,8,16,32,64]}
-clf_grid = GridSearchCV(clf_grid,parameters,scoring='f1')
+
+parameters = {'criterion':['entropy','gini'],
+              'splitter':['best'],
+              'max_depth':[10,11,12],
+              'min_samples_split':[5,10,15],
+              'min_samples_leaf':[50,55,60],
+              'max_features':[4,5,6],
+              'min_impurity_split':[.08,.1,.12,.15],
+              'class_weight':['balanced',{0:.3,1:.7},{0:.33,1:.67},{0:.28,1:.72}]
+              }
+
+clf_grid = GridSearchCV(clf_grid,parameters,scoring='roc_auc')
 clf_grid.fit(X_train,y_train)
+grid_params = clf_grid.best_params_
 
-clf_grid = clf_grid.best_estimator_
+#clf_grid = clf_grid.best_estimator_
 
-from sklearn.metrics import classification_report
+
+print "Best GridSearch Parameters -------"
+print grid_params
+
 grid_pred = clf_grid.predict(X_test)
+print "ROC AUC Score is ----" + str(roc_auc_score(y_test,grid_pred))
+print "Classification Report for Decision Tree Classifier with Grid Search ----------------------"
 print classification_report(y_test,grid_pred,target_names=['No Timeout','Timeout'])
 
 
 """
-
-Use AdaBoost to boost the best estimator found in the grid search
-
+Export the Decision Tree Classifier decision graph in order to visualize the results. Text from the graph.txt file can
+be input into http://webgraphviz.com/ in order to create visualization. There are some issues with installing the
+graphviz library on Windows systems, which is why I decided to output to txt file rather than attempting to export
+the visual to a pdf.
 """
-
-from sklearn.ensemble import AdaBoostClassifier
-
-ada_clf = AdaBoostClassifier(clf_grid)
-ada_clf.fit(X_train,y_train)
-ada_pred = ada_clf.predict(X_test)
-
-print "AdaBoost Classification Report -----"
-print classification_report(y_test,ada_pred,target_names=['No Timeout','Timeout'])
-
-
-"""
-
-Attempt at Random Forest Classifier with grid search
-
-"""
-
-from sklearn.ensemble import RandomForestClassifier
-
-rfc_grid = RandomForestClassifier()
-rfc_param = parameters
-rfc_grid = GridSearchCV(rfc_grid,parameters,scoring='f1')
-rfc_grid.fit(X_train,y_train)
-rfc_grid = rfc_grid.best_estimator_
-
-rfc_pred = rfc_grid.predict(X_test)
-
-print "Random Forest Classification Report -----"
-print classification_report(y_test,rfc_pred,target_names=['No Timeout','Timeout'])
-
-
-
-
-#export tree to graphical format so that we can visualize it
-
-
 import graphviz
-
-
-
-
 graph_dot = tree.export_graphviz(clf,
                                  out_file = "graph.txt",
                                  feature_names=list(Def_X_df),
@@ -224,5 +226,7 @@ graph_dot = tree.export_graphviz(clf,
                                  rounded = True)
 graph = graphviz.Source(graph_dot)
 
-#graph.render("graph")
+"""
+Visualize the ROC curve of the best parameter.
+"""
 
