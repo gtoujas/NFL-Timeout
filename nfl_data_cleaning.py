@@ -58,7 +58,7 @@ def InjuryTimeout(row):
     functions determines if a timeout is an injury timeout, this is not something we want to attempt to predict
     """
 
-    if str(row['desc']).__contains__('njury') and row['Timeout_Indicator'] == 1:
+    if str(row['desc']).__contains__('njur') and row['Timeout_Indicator'] == 1:
         InjuryTimeout = 1
     else:
         InjuryTimeout = 0
@@ -192,7 +192,8 @@ def down_post_play(row):
                                           row['down_s'] == 4,
                                           str(row['desc']).__contains__('enalty')]
 
-    if first_down_post == 1:
+    if first_down_post(row) == 1:
+
         down_post_play = 1
 
     elif all(consecutive_fourth_down_conditions) == True:
