@@ -40,7 +40,7 @@ def cleandata(dataframe):
 """
 Comment out the next line if you already have a 'clean_nfl_data.csv' file
 """
-#cleaned_df = cleandata(initial_df)
+cleaned_df = cleandata(initial_df)
 
 
 """
